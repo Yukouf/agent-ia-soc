@@ -9,7 +9,26 @@
 ╚═╝  ╚═╝ ╚═════╝ ╚════════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝╚═╝  ╚═╝    ╚══════╝ ╚═════╝  ╚═════╝
 ```
 
-> **Un agent SOC piloté par IA. Reçoit les alertes Wazuh. Analyse via LLM. Demande validation humaine sur Telegram. Exécute la remédiation automatiquement.**
+> **Un agent SOC piloté par IA. Reçoit les alertes Wazuh, les analyse (LLM ou heuristique), demande une validation humaine sur Telegram, puis exécute la remédiation — qui reste une option explicitement activée, désactivée par défaut.**
+
+## ⚠️ Ce qui est implémenté vs ce qui est un prototype
+
+Pour rester honnête sur le niveau de maturité du dépôt, les fonctionnalités sont classées en deux catégories :
+
+**✅ Effectives (code fonctionnel et testé)**
+- Webhook `/webhook/wazuh` + dashboard web sans JavaScript (stats, journal, historique).
+- Analyse d'alerte via **DeepSeek API**, avec repli automatique sur un moteur **heuristique** hors-ligne.
+- Validation humaine sur **Telegram** (APPROUVER / REJETER / INCERTAIN) + endpoints équivalents sur le dashboard.
+- Blocage IP via **iptables** (`block_ip`, `block_ip_temporary` avec déblocage planifié à 1 h).
+- Notification **Slack** si un webhook est fourni.
+- Détection des **faux positifs** et génération de règles de silence Wazuh.
+- Journal des actions dans `alerts_log.json`, approbations en attente dans `pending_approvals.json`.
+
+**🔬 Prototypes / à connecter (structure prévue, pas encore câblée)**
+- **Désactivation d'un compte Active Directory** : la commande `net user … /active:no` est définie dans `config.py` mais n'est **pas exécutée** par le moteur de remédiation.
+- **Création d'un vrai ticket GLPI** : le code loggue « Ticket à créer » mais **n'appelle pas l'API GLPI** ; il faut brancher `GLPI_URL` / `GLPI_API_TOKEN`.
+
+> La remédiation automatique est **désactivée par défaut** (variable `SOC_ENABLE_AUTO_REMEDIATION`). Sans cette variable à `true`, le moteur enregistre l'action mais ne l'exécute pas.
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.x-black?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
@@ -31,7 +50,7 @@ C'est lent. C'est coûteux. Et 90 % du temps, c'est du bruit.
 
 ## 💡 La solution
 
-**Agent IA SOC** ferme la boucle — de la détection à la remédiation — en moins de 30 secondes :
+**Agent IA SOC** aide à fermer la boucle — de la détection à la remédiation — en réduisant le temps passé à trier le bruit :
 
 ```
 Wazuh ──► Webhook ──► IA (analyse) ──► Telegram (validation humaine)
@@ -65,9 +84,8 @@ Wazuh ──► Webhook ──► IA (analyse) ──► Telegram (validation hu
                     ┌──────────────────┐
                     │  Remédiation     │
                     │  • iptables      │
-                    │  • AD disable    │
                     │  • Slack notify  │
-                    │  • GLPI ticket   │
+                    │  • log ticket    │
                     └──────────────────┘
 ```
 
@@ -144,17 +162,21 @@ L'`ai_engine.py` analyse l'alerte et retourne :
 >
 > [✅ APPROUVE] [❌ REJETTE] [❓ INCERTAIN]
 
-### 4. Remédiation automatique
+### 4. Remédiation
 
-Si approuvé, le `remediation_engine.py` exécute :
+Si approuvé **et** si la remédiation automatique est activée (`SOC_ENABLE_AUTO_REMEDIATION=true`), le `remediation_engine.py` exécute :
 
-| Action | Commande |
-|---|---|
-| `block_ip` | `iptables -A INPUT -s IP -j DROP` |
-| `block_ip_temporary` | Blocage 1h puis suppression auto |
-| `disable_user_ad` | `net user USER /domain /active:no` |
-| `notify_slack` | Alerte Slack |
-| `create_ticket_glpi` | Ticket GLPI |
+| Action | État | Comportement |
+|---|---|---|
+| `block_ip` | ✅ effectif | `iptables -A INPUT -s IP -j DROP` |
+| `block_ip_temporary` | ✅ effectif | Blocage 1 h puis suppression auto |
+| `silence_alert` | ✅ effectif | Enregistre le faux positif + règle de silence Wazuh |
+| `notify_slack` | ✅ effectif | Alerte Slack (si webhook fourni) |
+| `verify_and_escalate` | ✅ effectif | Escalade vers l'humain (log + Slack) |
+| `create_ticket` | ⚠️ partiel | Loggue « Ticket à créer » — l'appel API GLPI reste à brancher |
+| `disable_user_ad` | 🔬 prototype | Défini dans `config.py`, **non exécuté** par le moteur |
+
+> **Important :** si la remédiation automatique est désactivée (réglage par défaut), ces actions sont **enregistrées dans le journal** mais **jamais exécutées** — la validation humaine reste obligatoire.
 
 ---
 
@@ -217,9 +239,9 @@ agent-ia-soc/
 ├── test_fp.py              # Test des faux positifs
 ├── tests/
 │   └── test_security.py    # 11 tests de sécurité
-├── alerts_log.json         # Log des alertes traitées
-├── fp_tracker.json         # Tracker de faux positifs
-└── pending_approvals.json  # Approbations en attente
+├── alerts_log.json         # Log des alertes traitées (généré à l'exécution)
+├── fp_tracker.json         # Tracker de faux positifs (généré à l'exécution)
+└── pending_approvals.json  # Approbations en attente (généré à l'exécution)
 ```
 
 ---

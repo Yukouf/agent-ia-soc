@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+<title id="title">Agent IA SOC — architecture réelle</title><desc id="desc">Webhook Wazuh, analyse avec fallback déterministe, validation humaine et remédiation désactivée par défaut.</desc>
+<defs>
+ <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#172033" stroke-width="1"/></pattern>
+ <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity=".35"/></filter>
+ <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748b"/></marker>
+ <marker id="arrowCyan" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#22d3ee"/></marker>
+ <style>text{font-family:Inter,Segoe UI,Arial,sans-serif} .title{font-size:28px;font-weight:700;fill:#f8fafc}.sub{font-size:14px;fill:#94a3b8}.name{font-size:16px;font-weight:700;fill:#f8fafc}.detail{font-size:12px;fill:#cbd5e1}.tiny{font-size:11px;fill:#94a3b8}.zone{font-size:11px;font-weight:700;letter-spacing:1.5px}.label{font-size:11px;font-weight:600;fill:#cbd5e1} </style>
+</defs>
+<rect width="1200" height="720" rx="18" fill="#070b14"/><rect width="1200" height="720" rx="18" fill="url(#grid)" opacity=".65"/>
+<circle cx="46" cy="47" r="7" fill="#22d3ee"/><text x="66" y="56" class="title">Agent IA SOC — architecture réelle</text><text x="46" y="84" class="sub">Webhook Wazuh, analyse avec fallback déterministe, validation humaine et remédiation désactivée par défaut.</text>
+
+<rect x="35" y="108" width="235" height="480" rx="16" fill="#0b1220" fill-opacity=".55" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8 7"/><text x="51" y="133" class="zone" fill="#fbbf24">SOURCE EXTERNE</text>
+<rect x="295" y="108" width="870" height="480" rx="16" fill="#0b1220" fill-opacity=".55" stroke="#34d399" stroke-width="1.5" stroke-dasharray="8 7"/><text x="311" y="133" class="zone" fill="#34d399">AGENT SOC — FLASK :5000</text>
+<g filter="url(#shadow)"><rect x="60" y="205" width="185" height="95" rx="12" fill="#0f172a"/><rect x="60" y="205" width="185" height="95" rx="12" fill="#78350f" fill-opacity=".42" stroke="#fbbf24" stroke-width="1.7"/></g>
+<circle cx="80" cy="228" r="5" fill="#fbbf24"/><text x="94" y="234" class="name">Wazuh SIEM</text>
+<text x="80" y="257" class="detail">Alerte JSON</text>
+<text x="80" y="274" class="detail">POST /webhook/wazuh</text>
+<g filter="url(#shadow)"><rect x="325" y="180" width="190" height="120" rx="12" fill="#0f172a"/><rect x="325" y="180" width="190" height="120" rx="12" fill="#083344" fill-opacity=".42" stroke="#22d3ee" stroke-width="1.7"/></g>
+<circle cx="345" cy="203" r="5" fill="#22d3ee"/><text x="359" y="209" class="name">Webhook Flask</text>
+<text x="345" y="232" class="detail">Validation du niveau</text>
+<text x="345" y="249" class="detail">Normalisation Wazuh</text>
+<text x="345" y="266" class="detail">Dashboard + API</text>
+<g filter="url(#shadow)"><rect x="570" y="145" width="215" height="130" rx="12" fill="#0f172a"/><rect x="570" y="145" width="215" height="130" rx="12" fill="#064e3b" fill-opacity=".42" stroke="#34d399" stroke-width="1.7"/></g>
+<circle cx="590" cy="168" r="5" fill="#34d399"/><text x="604" y="174" class="name">Moteur d’analyse</text>
+<text x="590" y="197" class="detail">DeepSeek si clé valide</text>
+<text x="590" y="214" class="detail">Sinon règles locales</text>
+<text x="590" y="231" class="detail">JSON contrôlé</text>
+<g filter="url(#shadow)"><rect x="835" y="130" width="285" height="145" rx="12" fill="#0f172a"/><rect x="835" y="130" width="285" height="145" rx="12" fill="#881337" fill-opacity=".42" stroke="#fb7185" stroke-width="1.7"/></g>
+<circle cx="855" cy="153" r="5" fill="#fb7185"/><text x="869" y="159" class="name">Décision / exécution</text>
+<text x="855" y="182" class="detail">Escalade ou journal ticket</text>
+<text x="855" y="199" class="detail">iptables si auto activée</text>
+<text x="855" y="216" class="detail">Silence = journal local</text>
+<rect x="1028" y="142" width="78" height="21" rx="10" fill="#fb7185" fill-opacity=".18"/><text x="1067" y="157" text-anchor="middle" class="tiny" fill="#fb7185">OFF PAR DÉFAUT</text>
+<g filter="url(#shadow)"><rect x="570" y="345" width="215" height="125" rx="12" fill="#0f172a"/><rect x="570" y="345" width="215" height="125" rx="12" fill="#881337" fill-opacity=".42" stroke="#fb7185" stroke-width="1.7"/></g>
+<circle cx="590" cy="368" r="5" fill="#fb7185"/><text x="604" y="374" class="name">Validation humaine</text>
+<text x="590" y="397" class="detail">Telegram ou dashboard</text>
+<text x="590" y="414" class="detail">FP / Bloquer / Incertain</text>
+<text x="590" y="431" class="detail">Proposition de règle Wazuh</text>
+<rect x="693" y="357" width="78" height="21" rx="10" fill="#fb7185" fill-opacity=".18"/><text x="732" y="372" text-anchor="middle" class="tiny" fill="#fb7185">HUMAIN</text>
+<g filter="url(#shadow)"><rect x="835" y="350" width="285" height="120" rx="12" fill="#0f172a"/><rect x="835" y="350" width="285" height="120" rx="12" fill="#4c1d95" fill-opacity=".42" stroke="#a78bfa" stroke-width="1.7"/></g>
+<circle cx="855" cy="373" r="5" fill="#a78bfa"/><text x="869" y="379" class="name">État local</text>
+<text x="855" y="402" class="detail">alerts_log.json</text>
+<text x="855" y="419" class="detail">pending approvals / tracker</text>
+<text x="855" y="436" class="detail">Règles déployées après accord</text>
+<g filter="url(#shadow)"><rect x="325" y="390" width="190" height="100" rx="12" fill="#0f172a"/><rect x="325" y="390" width="190" height="100" rx="12" fill="#1e293b" fill-opacity=".42" stroke="#64748b" stroke-width="1.7"/></g>
+<circle cx="345" cy="413" r="5" fill="#64748b"/><text x="359" y="419" class="name">Slack</text>
+<text x="345" y="442" class="detail">Notification optionnelle</text>
+<text x="345" y="459" class="detail">sur blocage / escalade</text>
+<rect x="423" y="402" width="78" height="21" rx="10" fill="#64748b" fill-opacity=".18"/><text x="462" y="417" text-anchor="middle" class="tiny" fill="#64748b">OPTIONNEL</text>
+<line x1="245" y1="252" x2="325" y2="240" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="265.8" y="227.0" width="38.4" height="19" rx="8" fill="#070b14"/><text x="285.0" y="241.0" text-anchor="middle" class="label">JSON</text>
+<line x1="515" y1="230" x2="570" y2="210" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="506.79999999999995" y="201.0" width="71.4" height="19" rx="8" fill="#070b14"/><text x="542.5" y="215.0" text-anchor="middle" class="label">normalisé</text>
+<line x1="785" y1="210" x2="835" y2="210" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="780.9" y="191.0" width="58.199999999999996" height="19" rx="8" fill="#070b14"/><text x="810.0" y="205.0" text-anchor="middle" class="label">analyse</text>
+<path d="M975 275 L975 315 L680 345" fill="none" stroke="#fb7185" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="916.2" y="296" width="117.6" height="19" rx="8" fill="#070b14"/><text x="975" y="310" text-anchor="middle" class="label">demande d’accord</text>
+<line x1="785" y1="408" x2="835" y2="408" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="777.6" y="389.0" width="64.8" height="19" rx="8" fill="#070b14"/><text x="810.0" y="403.0" text-anchor="middle" class="label">décision</text>
+<line x1="975" y1="275" x2="975" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="945.9" y="293.5" width="58.199999999999996" height="19" rx="8" fill="#070b14"/><text x="975.0" y="307.5" text-anchor="middle" class="label">journal</text>
+<path d="M835 230 L810 315 L810 510 L540 510 L515 440" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<rect x="629.4" y="491" width="91.2" height="19" rx="8" fill="#070b14"/><text x="675" y="505" text-anchor="middle" class="label">notification</text>
+<circle cx="55" cy="640" r="5" fill="#22d3ee"/><text x="67" y="644" class="tiny">Entrée / UI</text>
+<circle cx="225" cy="640" r="5" fill="#34d399"/><text x="237" y="644" class="tiny">Traitement réel</text>
+<circle cx="395" cy="640" r="5" fill="#a78bfa"/><text x="407" y="644" class="tiny">Données / sortie</text>
+<circle cx="565" cy="640" r="5" fill="#fb7185"/><text x="577" y="644" class="tiny">Sécurité / humain</text>
+<circle cx="735" cy="640" r="5" fill="#fbbf24"/><text x="747" y="644" class="tiny">Service externe</text>
+<circle cx="905" cy="640" r="5" fill="#64748b"/><text x="917" y="644" class="tiny">Optionnel</text>
+</svg>

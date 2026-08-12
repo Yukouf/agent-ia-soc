@@ -9,16 +9,16 @@
 ╚═╝  ╚═╝ ╚═════╝ ╚════════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝╚═╝  ╚═╝    ╚══════╝ ╚═════╝  ╚═════╝
 ```
 
-> **Un agent SOC piloté par IA. Reçoit les alertes Wazuh, les analyse (LLM ou heuristique), demande une validation humaine sur Telegram, puis exécute la remédiation — qui reste une option explicitement activée, désactivée par défaut.**
+> **Un agent SOC défensif. Il reçoit les alertes Wazuh, les analyse (LLM ou heuristique), journalise ou exécute l’action autorisée par la configuration, puis sollicite une décision humaine sur Telegram ou dans le dashboard. La remédiation automatique est désactivée par défaut.**
 
 ## ⚠️ Ce qui est implémenté vs ce qui est un prototype
 
 Pour rester honnête sur le niveau de maturité du dépôt, les fonctionnalités sont classées en deux catégories :
 
 **✅ Effectives (code fonctionnel et testé)**
-- Webhook `/webhook/wazuh` + dashboard web sans JavaScript (stats, journal, historique).
+- Webhook `/webhook/wazuh` + dashboard web (stats, journal, historique et décisions).
 - Analyse d'alerte via **DeepSeek API**, avec repli automatique sur un moteur **heuristique** hors-ligne.
-- Validation humaine sur **Telegram** (APPROUVER / REJETER / INCERTAIN) + endpoints équivalents sur le dashboard.
+- Décision humaine sur **Telegram** (APPROUVER / REJETER / INCERTAIN) + endpoints équivalents sur le dashboard, notamment pour les propositions de règles Wazuh.
 - Blocage IP via **iptables** (`block_ip`, `block_ip_temporary` avec déblocage planifié à 1 h).
 - Notification **Slack** si un webhook est fourni.
 - Détection des **faux positifs** et génération de règles de silence Wazuh.
@@ -41,53 +41,24 @@ Pour rester honnête sur le niveau de maturité du dépôt, les fonctionnalités
 
 ## 🎯 Le problème
 
-Les SOC N1 passent leur temps à :
-- Trier des **faux positifs** (Nmap scans, tentatives légitimes)
-- **Copier-coller** des IP dans iptables
-- **Attendre** qu'un humain valide chaque action
+Les analystes SOC N1 doivent régulièrement :
+- Trier des **faux positifs** et des événements légitimes
+- **Copier-coller** des IP dans des outils de blocage
+- Documenter puis faire valider les décisions sensibles
 
-C'est lent. C'est coûteux. Et 90 % du temps, c'est du bruit.
+Ces tâches répétitives ralentissent le traitement et détournent l’attention des incidents prioritaires.
 
 ## 💡 La solution
 
-**Agent IA SOC** aide à fermer la boucle — de la détection à la remédiation — en réduisant le temps passé à trier le bruit :
-
-```
-Wazuh ──► Webhook ──► IA (analyse) ──► Telegram (validation humaine)
-                    │                        │
-                    │              ┌─────────┴──────────┐
-                    │              │   ✅ APPROVE        │
-                    │              │   ❌ REJECT         │
-                    │              │   ❓ UNSURE         │
-                    │              └─────────┬──────────┘
-                    │                        │
-                    └──────── Remédiation auto (si approuvé)
-```
+**Agent IA SOC** aide à fermer la boucle — de la détection à la décision — en réduisant le temps passé à trier le bruit. Le webhook normalise l’alerte, le moteur l’analyse, puis journalise ou exécute l’action selon la configuration. Telegram et le dashboard fournissent ensuite une validation humaine pour les propositions de règles et les décisions sensibles.
 
 ---
 
 ## 🏗️ Architecture
 
-```
-┌─────────────┐     ┌──────────────────┐     ┌───────────────┐
-│   Wazuh     │────▶│  Flask Webhook   │────▶│  AI Engine    │
-│   (SIEM)    │     │  :5000           │     │  (LLM)        │
-└─────────────┘     └────────┬─────────┘     └───────┬───────┘
-                             │                       │
-                             ▼                       ▼
-                    ┌──────────────────┐     ┌───────────────┐
-                    │  Telegram Bot    │◀────│  Décision     │
-                    │  (approbation)   │     │  (auto/man)   │
-                    └────────┬─────────┘     └───────────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │  Remédiation     │
-                    │  • iptables      │
-                    │  • Slack notify  │
-                    │  • log ticket    │
-                    └──────────────────┘
-```
+![Architecture réelle de l’Agent IA SOC](assets/architecture.svg)
+
+Le moteur tente DeepSeek lorsqu’une clé est disponible, puis bascule sur des règles locales. La remédiation automatique reste **désactivée par défaut** : sans `SOC_ENABLE_AUTO_REMEDIATION=true`, aucun blocage IP proposé par l’analyse n’est exécuté. Les intégrations AD et GLPI restent hors du flux effectif.
 
 ---
 
@@ -182,7 +153,7 @@ Si approuvé **et** si la remédiation automatique est activée (`SOC_ENABLE_AUT
 
 ## 📊 Dashboard web
 
-Interface minimale, zéro JavaScript requis. Données injectées côté serveur :
+Interface minimale rendue côté serveur, avec un JavaScript client limité à l’auto-rafraîchissement et aux actions d’approbation :
 
 - 🔴 **Alertes actives** avec sévérité et confiance
 - 📋 **Historique** des remédiations
@@ -218,10 +189,10 @@ Ran 11 tests in 0.024s — OK
 ## 🔒 Sécurité
 
 - ✅ Échappement HTML de toutes les données non fiables (XSS)
-- ✅ Pas de JavaScript côté client → surface d'attaque réduite
+- ✅ JavaScript client limité au rafraîchissement et aux décisions du dashboard
 - ✅ Validation des payloads entrants
 - ✅ Tests de sécurité automatisés
-- ✅ Détection des faux positifs et création automatique de règles Wazuh
+- ✅ Détection des faux positifs, proposition de règles et déploiement après accord
 
 ---
 
@@ -239,6 +210,7 @@ agent-ia-soc/
 ├── test_fp.py              # Test des faux positifs
 ├── tests/
 │   └── test_security.py    # 11 tests de sécurité
+├── assets/architecture.svg # Schéma d’architecture vectoriel
 ├── alerts_log.json         # Log des alertes traitées (généré à l'exécution)
 ├── fp_tracker.json         # Tracker de faux positifs (généré à l'exécution)
 └── pending_approvals.json  # Approbations en attente (généré à l'exécution)
@@ -250,7 +222,7 @@ agent-ia-soc/
 
 - [ ] Intégration native Discord (en plus de Telegram)
 - [x] Détection automatique des faux positifs
-- [x] Dashboard sans JavaScript
+- [x] Dashboard léger avec rafraîchissement et décisions côté client
 - [ ] Playbooks de remédiation avancés (SOAR)
 - [ ] Support multi-tenants
 - [ ] Export PDF des rapports d'incidents
